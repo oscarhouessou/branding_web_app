@@ -22,13 +22,13 @@ const downloadButton = document.getElementById('downloadButton');
 
 // Initialize camera access
 // Modification pour permettre l'utilisation de la caméra arrière par défaut sur mobile
+// Modifications dans le JavaScript (app.js) - Modifier la fonction initializeCamera :
 async function initializeCamera() {
     try {
-        let facingMode = 'user'; // Caméra frontale par défaut
+        let facingMode = 'user';
         
-        // Vérifier si c'est un appareil mobile
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            facingMode = 'environment'; // Utiliser la caméra arrière sur les appareils mobiles
+            facingMode = 'environment';
         }
         
         stream = await navigator.mediaDevices.getUserMedia({ 
@@ -37,15 +37,15 @@ async function initializeCamera() {
                 height: { ideal: 720 },
                 facingMode: facingMode
             },
-            audio: true 
+            audio: false  // Désactivation de l'audio
         });
         
         video.srcObject = stream;
         video.play();
 
-        // Initialiser MediaRecorder avec de meilleures options
+        // Initialiser MediaRecorder avec les options vidéo uniquement
         mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9,opus'
+            mimeType: 'video/webm;codecs=vp9'  // Retrait de 'opus' car nous n'enregistrons plus l'audio
         });
 
         mediaRecorder.ondataavailable = handleDataAvailable;
