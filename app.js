@@ -21,14 +21,21 @@ const processingPopup = document.getElementById('processingPopup');
 const downloadButton = document.getElementById('downloadButton');
 
 // Initialize camera access
-// Modification pour permettre l'utilisation de la caméra arrière
+// Modification pour permettre l'utilisation de la caméra arrière par défaut sur mobile
 async function initializeCamera() {
     try {
+        let facingMode = 'user'; // Caméra frontale par défaut
+        
+        // Vérifier si c'est un appareil mobile
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            facingMode = 'environment'; // Utiliser la caméra arrière sur les appareils mobiles
+        }
+        
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
-                facingMode: 'environment' // Utiliser la caméra arrière
+                facingMode: facingMode
             },
             audio: true 
         });
@@ -51,7 +58,6 @@ async function initializeCamera() {
         statusElement.textContent = "Erreur d'accès à la caméra : " + error.message;
     }
 }
-
 // Handle recording data
 function handleDataAvailable(event) {
     if (event.data.size > 0) {

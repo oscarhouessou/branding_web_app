@@ -1,6 +1,6 @@
 /* Base styles and variables */
 :root {
-    --primary-color: #2196F3;
+    --primary-color: #00b140; /* Vert Gozem */
     --secondary-color: #607D8B;
     --success-color: #4CAF50;
     --danger-color: #f44336;
@@ -16,6 +16,21 @@
     --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.app-header h1 {
+    color: var(--primary-color);
+}
+
+.tab-button.active {
+    background: var(--primary-color);
+}
+
+.btn.primary {
+    background: var(--primary-color);
+}
+
+.btn.success {
+    background: var(--primary-color);
+}
 /* Global styles */
 * {
     margin: 0;
