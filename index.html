@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification du Branding - Application Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1><i class="fas fa-video"></i> Vérification du Branding</h1>
+            <p class="app-description">Système de vérification automatique du branding des véhicules</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="tab1">
+                <i class="fas fa-camera"></i>
+                Enregistrement
+            </button>
+            <button class="tab-button" data-tab="tab2">
+                <i class="fas fa-chart-bar"></i>
+                Résultats
+            </button>
+        </nav>
+
+        <main>
+            <section id="tab1" class="tab-content active">
+                <div class="form-panel">
+                    <div class="input-group">
+                        <i class="fas fa-id-card"></i>
+                        <input type="text" id="championID" placeholder="Champion ID" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="lastName" placeholder="Nom de famille" required>
+                    </div>
+                </div>
+
+                <div id="recordingContainer" class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <div class="timer-overlay">
+                        <span id="timer">00:00</span>
+                    </div>
+                </div>
+
+                <div id="previewContainer" class="video-container hidden">
+                    <video id="preview" controls playsinline></video>
+                </div>
+
+                <div class="controls">
+                    <button id="startRecord" class="btn primary" disabled>
+                        <i class="fas fa-record-vinyl"></i> Démarrer
+                    </button>
+                    <button id="stopRecord" class="btn danger" disabled>
+                        <i class="fas fa-stop"></i> Arrêter
+                    </button>
+                    <button id="retakeButton" class="btn secondary" disabled>
+                        <i class="fas fa-redo"></i> Reprendre
+                    </button>
+                    <button id="downloadButton" class="btn info" disabled>
+                        <i class="fas fa-download"></i> Télécharger
+                    </button>
+                </div>
+
+                <div class="submission-controls">
+                    <button id="submitButton" class="btn success" disabled>
+                        <i class="fas fa-paper-plane"></i> Soumettre
+                    </button>
+                </div>
+
+                <div class="status-panel">
+                    <p id="status" class="status-message">Initialisation...</p>
+                </div>
+            </section>
+
+            <section id="tab2" class="tab-content">
+                <div class="results-container">
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3><i class="fas fa-image"></i> Logo détecté</h3>
+                            <div class="image-container">
+                                <img id="logoImage" alt="Logo" src="assets/placeholder.svg">
+                            </div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <h3><i class="fas fa-car"></i> Plaque détectée</h3>
+                            <div class="image-container">
+                                <img id="plateImage" alt="Plaque" src="assets/placeholder.svg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h2><i class="fas fa-clipboard-list"></i> Résumé des informations</h2>
+                        <div id="summaryText" class="summary-content"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="processingPopup" class="popup hidden">
+        <div class="popup-content">
+            <div class="spinner"></div>
+            <p>Traitement en cours...</p>
+            <p class="subtitle">Veuillez patienter pendant l'analyse de votre vidéo</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
