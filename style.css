@@ -391,6 +391,8 @@ video {
     display: none !important;
 }
 
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .container {
@@ -417,5 +419,14 @@ video {
     .tab-button {
         width: 100%;
         justify-content: center;
+    }
+
+    .video-container {
+        height: 50vh;
+    }
+
+    video {
+        height: 100%;
+        width: auto;
     }
 }

@@ -21,12 +21,14 @@ const processingPopup = document.getElementById('processingPopup');
 const downloadButton = document.getElementById('downloadButton');
 
 // Initialize camera access
+// Modification pour permettre l'utilisation de la caméra arrière
 async function initializeCamera() {
     try {
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
                 width: { ideal: 1280 },
-                height: { ideal: 720 }
+                height: { ideal: 720 },
+                facingMode: 'environment' // Utiliser la caméra arrière
             },
             audio: true 
         });
