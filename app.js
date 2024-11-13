@@ -58,6 +58,7 @@ async function initializeCamera() {
         statusElement.textContent = "Erreur d'accès à la caméra : " + error.message;
     }
 }
+
 // Handle recording data
 function handleDataAvailable(event) {
     if (event.data.size > 0) {
@@ -72,8 +73,12 @@ async function handleRecordingStop() {
     const blob = new Blob(recordedChunks, { type: 'video/webm' });
     recordedVideoURL = URL.createObjectURL(blob);
     
+    // Convertir la vidéo WebM en MP4
+    const mp4Blob = await convertToMP4(blob);
+    const mp4URL = URL.createObjectURL(mp4Blob);
+    
     // Configure preview video
-    preview.src = recordedVideoURL;
+    preview.src = mp4URL;
     preview.controls = true;
     
     // Show/hide containers
@@ -89,6 +94,22 @@ async function handleRecordingStop() {
     timerElement.textContent = "00:00";
     
     statusElement.textContent = "Enregistrement terminé. Vous pouvez visionner la vidéo.";
+}
+
+// Convert WebM to MP4
+async function convertToMP4(webmBlob) {
+    try {
+        const ffmpeg = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
+        await ffmpeg.load();
+
+        ffmpeg.FS('writeFile', 'input.webm', await webmBlob.arrayBuffer());
+        await ffmpeg.run('-i', 'input.webm', '-c:v', 'libx264', '-crf', '23', '-preset', 'medium', '-c:a', 'aac', '-b:a', '128k', 'output.mp4');
+        const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
+        return new Blob([mp4Data.buffer], { type: 'video/mp4' });
+    } catch (error) {
+        console.error("Erreur de conversion en MP4:", error);
+        throw error;
+    }
 }
 
 // Start recording
@@ -196,8 +217,8 @@ async function submitVideo() {
     showProcessingPopup();
     
     try {
-        // Convertir WebM en MP4 si nécessaire (à implémenter côté serveur)
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        // Convertir WebM en MP4 (effectué dans handleRecordingStop)
+        const blob = new Blob(recordedChunks, { type: 'video/mp4' });
         const formData = new FormData();
         formData.append('file', blob, 'video.mp4');
         formData.append('championID', championIDInput.value);
