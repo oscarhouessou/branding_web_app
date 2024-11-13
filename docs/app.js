@@ -322,7 +322,5 @@ retakeButton.addEventListener('click', retakeVideo);
 downloadButton.addEventListener('click', downloadVideo);
 submitButton.addEventListener('click', submitVideo);
 
-
-// redeploieement 
 // Initialize the application
 initializeCamera();
