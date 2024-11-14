@@ -21,15 +21,12 @@ const processingPopup = document.getElementById('processingPopup');
 const downloadButton = document.getElementById('downloadButton');
 
 // Initialize camera access
-// Modification pour permettre l'utilisation de la caméra arrière par défaut sur mobile
-// Modifications dans le JavaScript (app.js) - Modifier la fonction initializeCamera :
 async function initializeCamera() {
     try {
-        let facingMode = 'user';
-        
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            facingMode = 'environment';
-        }
+        // Déterminer le mode de la caméra en fonction de l'appareil
+        let facingMode = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+            ? 'environment' // Caméra arrière pour mobile
+            : 'user'; // Caméra frontale pour desktop
         
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
@@ -37,50 +34,50 @@ async function initializeCamera() {
                 height: { ideal: 720 },
                 facingMode: facingMode
             },
-            audio: false  // Désactivation de l'audio
+            audio: false
         });
         
         video.srcObject = stream;
-        video.play();
+        await video.play();
 
-        // Initialiser MediaRecorder avec les options vidéo uniquement
         mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9'  // Retrait de 'opus' car nous n'enregistrons plus l'audio
+            mimeType: 'video/webm;codecs=vp9'
         });
 
         mediaRecorder.ondataavailable = handleDataAvailable;
         mediaRecorder.onstop = handleRecordingStop;
 
         startButton.disabled = false;
-        statusElement.textContent = "Prêt à enregistrer";
+        updateStatus("Prêt à enregistrer", "success");
     } catch (error) {
         console.error("Erreur d'accès à la caméra :", error);
-        statusElement.textContent = "Erreur d'accès à la caméra : " + error.message;
+        updateStatus(`Erreur d'accès à la caméra: ${error.message}`, "error");
     }
 }
-// Handle recording data
+
+function updateStatus(message, type = "info") {
+    statusElement.textContent = message;
+    statusElement.className = `status-message ${type}`;
+}
+
 function handleDataAvailable(event) {
     if (event.data.size > 0) {
         recordedChunks.push(event.data);
     }
 }
 
-// Handle recording stop
 async function handleRecordingStop() {
     if (recordedChunks.length === 0) return;
 
     const blob = new Blob(recordedChunks, { type: 'video/webm' });
     recordedVideoURL = URL.createObjectURL(blob);
     
-    // Configure preview video
     preview.src = recordedVideoURL;
     preview.controls = true;
     
-    // Show/hide containers
     previewContainer.classList.remove('hidden');
     recordingContainer.classList.add('hidden');
     
-    // Enable relevant buttons
     retakeButton.disabled = false;
     submitButton.disabled = false;
     downloadButton.disabled = false;
@@ -88,56 +85,51 @@ async function handleRecordingStop() {
     clearInterval(timerInterval);
     timerElement.textContent = "00:00";
     
-    statusElement.textContent = "Enregistrement terminé. Vous pouvez visionner la vidéo.";
+    updateStatus("Enregistrement terminé. Vous pouvez visionner la vidéo.", "success");
 }
 
-// Start recording
 function startRecording() {
+    if (!validateInputs()) {
+        updateStatus("Veuillez remplir tous les champs obligatoires", "error");
+        return;
+    }
+
     recordedChunks = [];
     
-    // Reset UI
     preview.src = '';
     previewContainer.classList.add('hidden');
     recordingContainer.classList.remove('hidden');
     
-    // Configure buttons
     startButton.disabled = true;
     stopButton.disabled = false;
     retakeButton.disabled = true;
     submitButton.disabled = true;
     downloadButton.disabled = true;
     
-    // Start recording
     try {
         mediaRecorder.start();
-        statusElement.textContent = "Enregistrement en cours...";
+        updateStatus("Enregistrement en cours...", "info");
         startTimer();
     } catch (error) {
         console.error("Erreur de démarrage de l'enregistrement:", error);
-        statusElement.textContent = "Erreur lors du démarrage de l'enregistrement";
+        updateStatus("Erreur lors du démarrage de l'enregistrement", "error");
         resetUI();
     }
 }
 
-// Stop recording
 function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
         stopButton.disabled = true;
-        
-        // Arrêter le timer
         clearInterval(timerInterval);
     }
 }
 
-// Retake video
 function retakeVideo() {
-    // Clean up previous recording
     if (recordedVideoURL) {
         URL.revokeObjectURL(recordedVideoURL);
     }
     
-    // Reset UI
     previewContainer.classList.add('hidden');
     recordingContainer.classList.remove('hidden');
     startButton.disabled = false;
@@ -148,9 +140,8 @@ function retakeVideo() {
     
     recordedChunks = [];
     timerElement.textContent = "00:00";
-    statusElement.textContent = "Prêt à enregistrer";
+    updateStatus("Prêt à enregistrer", "info");
     
-    // Ensure video stream is active
     if (video.srcObject) {
         video.play();
     } else {
@@ -158,10 +149,9 @@ function retakeVideo() {
     }
 }
 
-// Download recorded video
 function downloadVideo() {
     if (recordedChunks.length === 0) {
-        statusElement.textContent = "Aucune vidéo à télécharger";
+        updateStatus("Aucune vidéo à télécharger", "error");
         return;
     }
     
@@ -170,106 +160,82 @@ function downloadVideo() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `video-${Date.now()}.webm`;
+        a.download = `gozem-branding-${championIDInput.value}-${Date.now()}.webm`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (error) {
         console.error("Erreur lors du téléchargement:", error);
-        statusElement.textContent = "Erreur lors du téléchargement de la vidéo";
+        updateStatus("Erreur lors du téléchargement de la vidéo", "error");
     }
 }
 
-// Upload video to API
 async function submitVideo() {
-    if (recordedChunks.length === 0) {
-        statusElement.textContent = "Aucune vidéo à envoyer";
+    if (!validateInputs()) {
+        updateStatus("Veuillez remplir tous les champs obligatoires", "error");
         return;
     }
 
-    if (!championIDInput.value || !lastNameInput.value) {
-        statusElement.textContent = "Veuillez remplir tous les champs";
+    if (recordedChunks.length === 0) {
+        updateStatus("Aucune vidéo à envoyer", "error");
         return;
     }
 
     showProcessingPopup();
     
     try {
-        // Convertir WebM en MP4 si nécessaire (à implémenter côté serveur)
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const formData = new FormData();
-        formData.append('file', blob, 'video.mp4');
-        formData.append('championID', championIDInput.value);
-        formData.append('lastName', lastNameInput.value);
+        formData.append('file', blob, `gozem-branding-${championIDInput.value}.webm`);
 
         const response = await fetch('https://branding-fastapi-app-194419091475.us-central1.run.app/process_video/', {
             method: 'POST',
             body: formData
         });
 
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         
-        if (data.status === "success") {
-            localStorage.setItem('resultData', JSON.stringify(data));
+        if (data.status === "success" && data.results) {
+            const processedData = {
+                status: "success",
+                logoDetected: data.results.best_logo?.visibility === "OK",
+                plateDetected: Boolean(data.results.best_plate?.text),
+                plateText: data.results.best_plate?.text || '',
+                plateConfidence: data.results.best_plate?.score || 0,
+                logoScore: data.results.best_logo?.best_score || 0,
+                logoImageUrl: data.results.best_logo?.logo_image_url || '',
+                plateImageUrl: data.results.best_plate?.plate_image_url || ''
+            };
+
+            localStorage.setItem('resultData', JSON.stringify(processedData));
             localStorage.setItem('userData', JSON.stringify({
                 championID: championIDInput.value,
                 lastName: lastNameInput.value
             }));
+
+            displayResults();
             showTab('tab2');
-            statusElement.textContent = "Vidéo traitée avec succès !";
+            updateStatus("Vidéo traitée avec succès !", "success");
         } else {
             throw new Error(data.message || "Erreur de traitement");
         }
     } catch (error) {
         console.error("Erreur d'envoi:", error);
-        statusElement.textContent = "Erreur lors du traitement de la vidéo: " + error.message;
+        updateStatus(`Erreur lors du traitement de la vidéo: ${error.message}`, "error");
     } finally {
         hideProcessingPopup();
     }
 }
 
-// Timer functions
-function startTimer() {
-    let seconds = 0;
-    timerInterval = setInterval(() => {
-        seconds++;
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        timerElement.textContent = `${padTime(minutes)}:${padTime(secs)}`;
-    }, 1000);
+function validateInputs() {
+    return championIDInput.value.trim() && lastNameInput.value.trim();
 }
 
-function padTime(time) {
-    return time < 10 ? `0${time}` : time;
-}
-
-// Reset UI state
-function resetUI() {
-    startButton.disabled = false;
-    stopButton.disabled = true;
-    retakeButton.disabled = true;
-    submitButton.disabled = true;
-    downloadButton.disabled = true;
-}
-
-// Tab management
-function showTab(tabId) {
-    const tabs = document.querySelectorAll('.tab-content');
-    const buttons = document.querySelectorAll('.tab-button');
-    
-    tabs.forEach(tab => tab.classList.remove('active'));
-    buttons.forEach(btn => btn.classList.remove('active'));
-    
-    document.getElementById(tabId).classList.add('active');
-    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-    
-    if (tabId === 'tab2') {
-        displayResults();
-    }
-}
-
-// Display results
 function displayResults() {
     const resultData = JSON.parse(localStorage.getItem('resultData'));
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -278,8 +244,8 @@ function displayResults() {
         const logoImage = document.getElementById('logoImage');
         const plateImage = document.getElementById('plateImage');
         
-        logoImage.src = resultData.logoDetected || 'assets/no-image.svg';
-        plateImage.src = resultData.plateDetected || 'assets/no-image.svg';
+        logoImage.src = resultData.logoImageUrl || 'assets/no-image.svg';
+        plateImage.src = resultData.plateImageUrl || 'assets/no-image.svg';
         
         document.getElementById('summaryText').innerHTML = `
             <div class="summary-item">
@@ -297,16 +263,66 @@ function displayResults() {
                 </span>
             </div>
             <div class="summary-item">
+                <span class="label">Score du logo:</span>
+                <span class="value">${(resultData.logoScore * 100).toFixed(1)}%</span>
+            </div>
+            <div class="summary-item">
                 <span class="label">Plaque détectée:</span>
                 <span class="value ${resultData.plateDetected ? 'success' : 'failure'}">
                     ${resultData.plateDetected ? 'Oui' : 'Non'}
                 </span>
             </div>
+            ${resultData.plateDetected ? `
+                <div class="summary-item">
+                    <span class="label">Texte de la plaque:</span>
+                    <span class="value">${resultData.plateText}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">Confiance plaque:</span>
+                    <span class="value">${(resultData.plateConfidence * 100).toFixed(1)}%</span>
+                </div>
+            ` : ''}
         `;
     }
 }
 
-// Popup management
+function startTimer() {
+    let seconds = 0;
+    timerInterval = setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        timerElement.textContent = `${padTime(minutes)}:${padTime(secs)}`;
+    }, 1000);
+}
+
+function padTime(time) {
+    return time < 10 ? `0${time}` : time;
+}
+
+function resetUI() {
+    startButton.disabled = false;
+    stopButton.disabled = true;
+    retakeButton.disabled = true;
+    submitButton.disabled = true;
+    downloadButton.disabled = true;
+}
+
+function showTab(tabId) {
+    const tabs = document.querySelectorAll('.tab-content');
+    const buttons = document.querySelectorAll('.tab-button');
+    
+    tabs.forEach(tab => tab.classList.remove('active'));
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+    
+    if (tabId === 'tab2') {
+        displayResults();
+    }
+}
+
 function showProcessingPopup() {
     processingPopup.classList.remove('hidden');
 }
