@@ -1,8 +1,10 @@
+// Global variables
 let mediaRecorder;
 let recordedChunks = [];
 let timerInterval;
 let recordedVideoURL;
 let stream;
+const API_BASE_URL = 'https://branding-fastapi-app-194419091475.us-central1.run.app';
 
 // DOM Elements
 const video = document.getElementById('video');
@@ -189,7 +191,7 @@ async function submitVideo() {
         const formData = new FormData();
         formData.append('file', blob, `gozem-branding-${championIDInput.value}.webm`);
 
-        const response = await fetch('https://branding-fastapi-app-194419091475.us-central1.run.app/process_video/', {
+        const response = await fetch(`${API_BASE_URL}/process_video/`, {
             method: 'POST',
             body: formData
         });
@@ -199,6 +201,7 @@ async function submitVideo() {
         }
 
         const data = await response.json();
+        console.log("Réponse API:", data); // Pour le débogage
         
         if (data.status === "success" && data.results) {
             const processedData = {
@@ -208,9 +211,16 @@ async function submitVideo() {
                 plateText: data.results.best_plate?.text || '',
                 plateConfidence: data.results.best_plate?.score || 0,
                 logoScore: data.results.best_logo?.best_score || 0,
-                logoImageUrl: data.results.best_logo?.logo_image_url || '',
-                plateImageUrl: data.results.best_plate?.plate_image_url || ''
+                logoImageUrl: data.results.best_logo?.logo_image_url ? 
+                    `${API_BASE_URL}${data.results.best_logo.logo_image_url}` : '',
+                plateImageUrl: data.results.best_plate?.plate_image_url ? 
+                    `${API_BASE_URL}${data.results.best_plate.plate_image_url}` : ''
             };
+
+            console.log("Images URLs:", {
+                logo: processedData.logoImageUrl,
+                plate: processedData.plateImageUrl
+            }); // Pour le débogage
 
             localStorage.setItem('resultData', JSON.stringify(processedData));
             localStorage.setItem('userData', JSON.stringify({
@@ -232,10 +242,6 @@ async function submitVideo() {
     }
 }
 
-function validateInputs() {
-    return championIDInput.value.trim() && lastNameInput.value.trim();
-}
-
 function displayResults() {
     const resultData = JSON.parse(localStorage.getItem('resultData'));
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -243,6 +249,23 @@ function displayResults() {
     if (resultData && userData) {
         const logoImage = document.getElementById('logoImage');
         const plateImage = document.getElementById('plateImage');
+        
+        // Ajouter des gestionnaires d'erreur pour les images
+        logoImage.onerror = function() {
+            console.error('Erreur de chargement de l\'image du logo:', this.src);
+            this.src = 'assets/no-image.svg';
+        };
+        
+        plateImage.onerror = function() {
+            console.error('Erreur de chargement de l\'image de la plaque:', this.src);
+            this.src = 'assets/no-image.svg';
+        };
+        
+        // Log avant de définir les sources
+        console.log("Setting image sources:", {
+            logo: resultData.logoImageUrl || 'assets/no-image.svg',
+            plate: resultData.plateImageUrl || 'assets/no-image.svg'
+        });
         
         logoImage.src = resultData.logoImageUrl || 'assets/no-image.svg';
         plateImage.src = resultData.plateImageUrl || 'assets/no-image.svg';
@@ -284,6 +307,10 @@ function displayResults() {
             ` : ''}
         `;
     }
+}
+
+function validateInputs() {
+    return championIDInput.value.trim() && lastNameInput.value.trim();
 }
 
 function startTimer() {
@@ -337,6 +364,13 @@ stopButton.addEventListener('click', stopRecording);
 retakeButton.addEventListener('click', retakeVideo);
 downloadButton.addEventListener('click', downloadVideo);
 submitButton.addEventListener('click', submitVideo);
+
+// Tab navigation
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        showTab(button.dataset.tab);
+    });
+});
 
 // Initialize the application
 initializeCamera();
