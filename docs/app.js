@@ -4,7 +4,7 @@ let recordedChunks = [];
 let timerInterval;
 let recordedVideoURL;
 let stream;
-const API_BASE_URL = 'https://branding-fastapi-app-194419091475.us-central1.run.app';
+const API_BASE_URL = 'https://my-fastapi-app-service-194419091475.us-central1.run.app';
 
 // DOM Elements
 const video = document.getElementById('video');
@@ -203,24 +203,19 @@ async function submitVideo() {
         const data = await response.json();
         console.log("Réponse API:", data); // Pour le débogage
         
-        if (data.status === "success" && data.results) {
+        if (data.status === "success" && data.request_id) {
             const processedData = {
                 status: "success",
+                requestId: data.request_id,
                 logoDetected: data.results.best_logo?.visibility === "OK",
                 plateDetected: Boolean(data.results.best_plate?.text),
                 plateText: data.results.best_plate?.text || '',
                 plateConfidence: data.results.best_plate?.score || 0,
                 logoScore: data.results.best_logo?.best_score || 0,
-                logoImageUrl: data.results.best_logo?.logo_image_url ? 
-                    `${API_BASE_URL}${data.results.best_logo.logo_image_url}` : '',
-                plateImageUrl: data.results.best_plate?.plate_image_url ? 
-                    `${API_BASE_URL}${data.results.best_plate.plate_image_url}` : ''
+                logoImageUrl: `${API_BASE_URL}/results/${data.request_id}/best_logo.jpg`,
+                plateImageUrl: `${API_BASE_URL}/results/${data.request_id}/best_license_plate.jpg`,
+                videoUrl: `${API_BASE_URL}/results/${data.request_id}/VID_04.mp4`
             };
-
-            console.log("Images URLs:", {
-                logo: processedData.logoImageUrl,
-                plate: processedData.plateImageUrl
-            }); // Pour le débogage
 
             localStorage.setItem('resultData', JSON.stringify(processedData));
             localStorage.setItem('userData', JSON.stringify({
@@ -261,16 +256,14 @@ function displayResults() {
             this.src = 'assets/no-image.svg';
         };
         
-        // Log avant de définir les sources
-        console.log("Setting image sources:", {
-            logo: resultData.logoImageUrl || 'assets/no-image.svg',
-            plate: resultData.plateImageUrl || 'assets/no-image.svg'
-        });
-        
         logoImage.src = resultData.logoImageUrl || 'assets/no-image.svg';
         plateImage.src = resultData.plateImageUrl || 'assets/no-image.svg';
         
         document.getElementById('summaryText').innerHTML = `
+            <div class="summary-item">
+                <span class="label">Request ID:</span>
+                <span class="value">${resultData.requestId}</span>
+            </div>
             <div class="summary-item">
                 <span class="label">Champion ID:</span>
                 <span class="value">${userData.championID}</span>
@@ -305,6 +298,10 @@ function displayResults() {
                     <span class="value">${(resultData.plateConfidence * 100).toFixed(1)}%</span>
                 </div>
             ` : ''}
+            <div class="summary-item">
+                <span class="label">Vidéo traitée:</span>
+                <a href="${resultData.videoUrl}" target="_blank" class="video-link">Voir la vidéo traitée</a>
+            </div>
         `;
     }
 }
