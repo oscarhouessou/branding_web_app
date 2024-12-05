@@ -3,21 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vérification du Branding - Application Gozem</title>
+    <title>Vérification du Branding Gozem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <meta name="description" content="Application de vérification automatique du branding des véhicules Gozem">
 </head>
 <body>
     <div class="container">
         <header class="app-header">
-            <h1><i class="fas fa-video"></i> Vérification du Branding</h1>
-            <p class="app-description">Système de vérification automatique du branding des véhicules Gozem</p>
+            <div class="header-content">
+                <i class="fas fa-video header-icon"></i>
+                <div class="header-text">
+                    <h1>Vérification du Branding</h1>
+                    <p class="app-description">Système de vérification automatique du branding des véhicules Gozem</p>
+                </div>
+            </div>
         </header>
 
         <nav class="tabs">
             <button class="tab-button active" data-tab="tab1">
                 <i class="fas fa-camera"></i>
-                Enregistrement
+                Capture d'images
             </button>
             <button class="tab-button" data-tab="tab2">
                 <i class="fas fa-chart-bar"></i>
@@ -29,42 +35,84 @@
             <section id="tab1" class="tab-content active">
                 <div class="form-panel">
                     <div class="input-group">
-                        <i class="fas fa-id-card"></i>
-                        <input type="text" id="championID" placeholder="Champion ID" required>
+                        <label for="firstName" class="input-label">
+                            <i class="fas fa-user"></i>
+                        </label>
+                        <input type="text" id="firstName" name="firstName" placeholder="Prénom" required>
                     </div>
                     <div class="input-group">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="lastName" placeholder="Nom de famille" required>
+                        <label for="lastName" class="input-label">
+                            <i class="fas fa-user"></i>
+                        </label>
+                        <input type="text" id="lastName" name="lastName" placeholder="Nom de famille" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="phoneNumber" class="input-label">
+                            <i class="fas fa-phone"></i>
+                        </label>
+                        <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="Numéro de téléphone" required pattern="[0-9]{10}">
                     </div>
                 </div>
 
-                <div id="recordingContainer" class="video-container">
-                    <video id="video" autoplay playsinline muted></video>
-                    <div class="timer-overlay">
-                        <span id="timer">00:00</span>
+                <div id="captureInstructions" class="status-panel">
+                    <h2 id="instructionText" class="status-message">Capturer la plaque d'immatriculation du véhicule</h2>
+                </div>
+
+                <div class="capture-container">
+                    <div id="plateCapture" class="capture-section">
+                        <div class="video-container">
+                            <video id="plateVideo" autoplay playsinline muted></video>
+                            <div class="timer-overlay">
+                                <span id="plateTimer">00:00</span>
+                            </div>
+                        </div>
+
+                        <div class="controls">
+                            <button id="startPlateCaptureBtn" class="btn primary">
+                                <i class="fas fa-camera"></i> Capturer la plaque
+                            </button>
+                            <button id="retakePlateBtn" class="btn secondary hidden">
+                                <i class="fas fa-redo"></i> Reprendre
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="logoCapture" class="capture-section hidden">
+                        <div class="video-container">
+                            <video id="logoVideo" autoplay playsinline muted></video>
+                            <div class="timer-overlay">
+                                <span id="logoTimer">00:00</span>
+                            </div>
+                        </div>
+
+                        <div class="controls">
+                            <button id="startLogoCaptureBtn" class="btn primary">
+                                <i class="fas fa-camera"></i> Capturer le logo
+                            </button>
+                            <button id="retakeLogoBtn" class="btn secondary hidden">
+                                <i class="fas fa-redo"></i> Reprendre
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div id="previewContainer" class="video-container hidden">
-                    <video id="preview" controls playsinline></video>
-                </div>
-
-                <div class="controls">
-                    <button id="startRecord" class="btn primary" disabled>
-                        <i class="fas fa-record-vinyl"></i> Démarrer
-                    </button>
-                    <button id="stopRecord" class="btn danger" disabled>
-                        <i class="fas fa-stop"></i> Arrêter
-                    </button>
-                    <button id="retakeButton" class="btn secondary" disabled>
-                        <i class="fas fa-redo"></i> Reprendre
-                    </button>
-                    <button id="downloadButton" class="btn info" disabled>
-                        <i class="fas fa-download"></i> Télécharger
-                    </button>
+                <div class="capture-section-preview">
+                    <div id="platePreview" class="capture-preview">
+                        <div class="capture-status" id="plateStatus">
+                            <i class="fas fa-car"></i>
+                        </div>
+                    </div>
+                    <div id="logoPreview" class="capture-preview">
+                        <div class="capture-status" id="logoStatus">
+                            <i class="fas fa-image"></i>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="submission-controls">
+                    <button id="retakeButton" class="btn secondary">
+                        <i class="fas fa-redo"></i> Tout reprendre
+                    </button>
                     <button id="submitButton" class="btn success" disabled>
                         <i class="fas fa-paper-plane"></i> Soumettre
                     </button>
@@ -75,20 +123,36 @@
                 </div>
             </section>
 
-            <section id="tab2" class="tab-content">
+            <section id="tab2" class="tab-content results-section">
                 <div class="results-container">
                     <div class="results-grid">
                         <div class="result-card">
-                            <h3><i class="fas fa-image"></i> Logo détecté</h3>
+                            <h3><i class="fas fa-car"></i> Plaque détectée</h3>
                             <div class="image-container">
-                                <img id="logoImage" alt="Logo" src="assets/placeholder.svg">
+                                <img id="plateResultImage" alt="Plaque" src="assets/placeholder.svg">
+                                <div class="result-details">
+                                    <p class="result-text">
+                                        <strong>Numéro:</strong> 
+                                        <span id="plateNumberText">Non détecté</span>
+                                    </p>
+                                    <p class="result-text">
+                                        <strong>Visibilité:</strong> 
+                                        <span id="plateVisibilityText">N/A</span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         
                         <div class="result-card">
-                            <h3><i class="fas fa-car"></i> Plaque détectée</h3>
+                            <h3><i class="fas fa-image"></i> Logo détecté</h3>
                             <div class="image-container">
-                                <img id="plateImage" alt="Plaque" src="assets/placeholder.svg">
+                                <img id="logoResultImage" alt="Logo" src="assets/placeholder.svg">
+                                <div class="result-details">
+                                    <p class="result-text">
+                                        <strong>Visibilité:</strong> 
+                                        <span id="logoVisibilityText">N/A</span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -106,7 +170,7 @@
         <div class="popup-content">
             <div class="spinner"></div>
             <p>Traitement en cours...</p>
-            <p class="subtitle">Veuillez patienter pendant l'analyse de votre vidéo</p>
+            <p class="subtitle">Veuillez patienter pendant l'analyse de vos images</p>
         </div>
     </div>
 

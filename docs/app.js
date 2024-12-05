@@ -1,373 +1,340 @@
-// Global variables
-let mediaRecorder;
-let recordedChunks = [];
-let timerInterval;
-let recordedVideoURL;
-let stream;
-const API_BASE_URL = 'https://my-fastapi-app-service-194419091475.us-central1.run.app';
+class BrandingVerification {
+    constructor() {
+        this.initializeElements();
+        this.bindEvents();
+        this.initCamera('plate');
+        this.apiBaseUrl = 'https://branding-fastapi-194419091475.us-central1.run.app';
+    }
 
-// DOM Elements
-const video = document.getElementById('video');
-const preview = document.getElementById('preview');
-const startButton = document.getElementById('startRecord');
-const stopButton = document.getElementById('stopRecord');
-const retakeButton = document.getElementById('retakeButton');
-const previewContainer = document.getElementById('previewContainer');
-const recordingContainer = document.getElementById('recordingContainer');
-const statusElement = document.getElementById('status');
-const timerElement = document.getElementById('timer');
-const championIDInput = document.getElementById('championID');
-const lastNameInput = document.getElementById('lastName');
-const submitButton = document.getElementById('submitButton');
-const processingPopup = document.getElementById('processingPopup');
-const downloadButton = document.getElementById('downloadButton');
+    initializeElements() {
+        // Select all necessary DOM elements
+        this.elements = {
+            plateVideo: document.getElementById('plateVideo'),
+            logoVideo: document.getElementById('logoVideo'),
+            platePreview: document.getElementById('platePreview'),
+            logoPreview: document.getElementById('logoPreview'),
+            submitButton: document.getElementById('submitButton'),
+            retakeButton: document.getElementById('retakeButton'),
+            plateStatus: document.getElementById('plateStatus'),
+            logoStatus: document.getElementById('logoStatus'),
+            plateResultImage: document.getElementById('plateResultImage'),
+            logoResultImage: document.getElementById('logoResultImage'),
+            plateNumberText: document.getElementById('plateNumberText'),
+            plateVisibilityText: document.getElementById('plateVisibilityText'),
+            logoVisibilityText: document.getElementById('logoVisibilityText'),
+            summaryText: document.getElementById('summaryText'),
+            processingPopup: document.getElementById('processingPopup'),
+            instructionText: document.getElementById('instructionText'),
+            plateCapture: document.getElementById('plateCapture'),
+            logoCapture: document.getElementById('logoCapture'),
+            startPlateCaptureBtn: document.getElementById('startPlateCaptureBtn'),
+            startLogoCaptureBtn: document.getElementById('startLogoCaptureBtn'),
+            retakePlateBtn: document.getElementById('retakePlateBtn'),
+            retakeLogoBtn: document.getElementById('retakeLogoBtn'),
+            formInputs: {
+                firstName: document.getElementById('firstName'),
+                lastName: document.getElementById('lastName'),
+                phoneNumber: document.getElementById('phoneNumber')
+            }
+        };
 
-// Initialize camera access
-async function initializeCamera() {
-    try {
-        // Déterminer le mode de la caméra en fonction de l'appareil
-        let facingMode = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
-            ? 'environment' // Caméra arrière pour mobile
-            : 'user'; // Caméra frontale pour desktop
+        this.streams = {
+            plate: null,
+            logo: null
+        };
+
+        this.capturedImages = {
+            plate: null,
+            logo: null
+        };
+
+        this.requestId = null;
+        this.processingResults = null;
+    }
+
+    bindEvents() {
+        // Ensure submit button is enabled only when both inputs are captured
+        this.elements.submitButton.disabled = true;
+
+        this.elements.startPlateCaptureBtn.addEventListener('click', () => this.captureImage('plate'));
+        this.elements.startLogoCaptureBtn.addEventListener('click', () => this.captureImage('logo'));
+        this.elements.retakePlateBtn.addEventListener('click', () => this.resetCapture('plate'));
+        this.elements.retakeLogoBtn.addEventListener('click', () => this.resetCapture('logo'));
+        this.elements.retakeButton.addEventListener('click', () => this.resetEntireProcess());
+        this.elements.submitButton.addEventListener('click', () => this.submitData());
+
+        // Add validation to form inputs
+        Object.values(this.elements.formInputs).forEach(input => {
+            input.addEventListener('input', () => this.validateForm());
+        });
+
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => this.switchTab(button));
+        });
+    }
+
+    validateForm() {
+        const allFieldsFilled = Object.values(this.elements.formInputs).every(input => input.value.trim() !== '');
+        const plateAndLogoCaptured = 
+            this.elements.platePreview.classList.contains('captured') && 
+            this.elements.logoPreview.classList.contains('captured');
         
-        stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                facingMode: facingMode
-            },
-            audio: false
-        });
+        this.elements.submitButton.disabled = !(allFieldsFilled && plateAndLogoCaptured);
+    }
+
+    async initCamera(type) {
+        const constraints = type === 'plate' 
+            ? { video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } }
+            : { video: true };
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            this.streams[type] = stream;
+
+            if (type === 'plate') {
+                this.elements.plateVideo.srcObject = stream;
+                this.elements.plateCapture.classList.remove('hidden');
+                this.elements.logoCapture.classList.add('hidden');
+                this.elements.instructionText.textContent = 'Capturer la plaque d\'immatriculation du véhicule';
+            } else {
+                this.elements.logoVideo.srcObject = stream;
+                this.elements.plateCapture.classList.add('hidden');
+                this.elements.logoCapture.classList.remove('hidden');
+                this.elements.instructionText.textContent = 'Capturer le logo du véhicule';
+            }
+        } catch (err) {
+            console.error("Camera access error:", err);
+            alert('Impossible d\'accéder à la caméra. Vérifiez vos autorisations.');
+        }
+    }
+
+    stopCamera(stream) {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    captureImage(type) {
+        const videoElement = type === 'plate' ? this.elements.plateVideo : this.elements.logoVideo;
+        const preview = type === 'plate' ? this.elements.platePreview : this.elements.logoPreview;
+        const status = type === 'plate' ? this.elements.plateStatus : this.elements.logoStatus;
+        const startBtn = type === 'plate' ? this.elements.startPlateCaptureBtn : this.elements.startLogoCaptureBtn;
+        const retakeBtn = type === 'plate' ? this.elements.retakePlateBtn : this.elements.retakeLogoBtn;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
         
-        video.srcObject = stream;
-        await video.play();
+        // Convert canvas to blob
+        canvas.toBlob(blob => {
+            this.capturedImages[type] = blob;
+        }, 'image/png');
 
-        mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9'
-        });
+        const imageUrl = canvas.toDataURL('image/png');
 
-        mediaRecorder.ondataavailable = handleDataAvailable;
-        mediaRecorder.onstop = handleRecordingStop;
+        status.innerHTML = `<i class="fas fa-check-circle"></i> ${type === 'plate' ? 'Plaque' : 'Logo'} capturé`;
+        preview.style.backgroundImage = `url(${imageUrl})`;
+        preview.classList.add('captured');
 
-        startButton.disabled = false;
-        updateStatus("Prêt à enregistrer", "success");
-    } catch (error) {
-        console.error("Erreur d'accès à la caméra :", error);
-        updateStatus(`Erreur d'accès à la caméra: ${error.message}`, "error");
-    }
-}
+        this.stopCamera(this.streams[type]);
+        startBtn.classList.add('hidden');
+        retakeBtn.classList.remove('hidden');
 
-function updateStatus(message, type = "info") {
-    statusElement.textContent = message;
-    statusElement.className = `status-message ${type}`;
-}
+        // Validate form after capturing
+        this.validateForm();
 
-function handleDataAvailable(event) {
-    if (event.data.size > 0) {
-        recordedChunks.push(event.data);
-    }
-}
-
-async function handleRecordingStop() {
-    if (recordedChunks.length === 0) return;
-
-    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-    recordedVideoURL = URL.createObjectURL(blob);
-    
-    preview.src = recordedVideoURL;
-    preview.controls = true;
-    
-    previewContainer.classList.remove('hidden');
-    recordingContainer.classList.add('hidden');
-    
-    retakeButton.disabled = false;
-    submitButton.disabled = false;
-    downloadButton.disabled = false;
-    
-    clearInterval(timerInterval);
-    timerElement.textContent = "00:00";
-    
-    updateStatus("Enregistrement terminé. Vous pouvez visionner la vidéo.", "success");
-}
-
-function startRecording() {
-    if (!validateInputs()) {
-        updateStatus("Veuillez remplir tous les champs obligatoires", "error");
-        return;
+        if (type === 'plate') {
+            setTimeout(() => this.initCamera('logo'), 500);
+        }
     }
 
-    recordedChunks = [];
-    
-    preview.src = '';
-    previewContainer.classList.add('hidden');
-    recordingContainer.classList.remove('hidden');
-    
-    startButton.disabled = true;
-    stopButton.disabled = false;
-    retakeButton.disabled = true;
-    submitButton.disabled = true;
-    downloadButton.disabled = true;
-    
-    try {
-        mediaRecorder.start();
-        updateStatus("Enregistrement en cours...", "info");
-        startTimer();
-    } catch (error) {
-        console.error("Erreur de démarrage de l'enregistrement:", error);
-        updateStatus("Erreur lors du démarrage de l'enregistrement", "error");
-        resetUI();
-    }
-}
+    resetCapture(type) {
+        const preview = type === 'plate' ? this.elements.platePreview : this.elements.logoPreview;
+        const status = type === 'plate' ? this.elements.plateStatus : this.elements.logoStatus;
+        const startBtn = type === 'plate' ? this.elements.startPlateCaptureBtn : this.elements.startLogoCaptureBtn;
+        const retakeBtn = type === 'plate' ? this.elements.retakePlateBtn : this.elements.retakeLogoBtn;
 
-function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-        stopButton.disabled = true;
-        clearInterval(timerInterval);
-    }
-}
+        preview.style.backgroundImage = '';
+        preview.classList.remove('captured');
+        status.innerHTML = `<i class="fas fa-${type === 'plate' ? 'car' : 'image'}"></i>`;
+        retakeBtn.classList.add('hidden');
+        startBtn.classList.remove('hidden');
 
-function retakeVideo() {
-    if (recordedVideoURL) {
-        URL.revokeObjectURL(recordedVideoURL);
-    }
-    
-    previewContainer.classList.add('hidden');
-    recordingContainer.classList.remove('hidden');
-    startButton.disabled = false;
-    stopButton.disabled = true;
-    retakeButton.disabled = true;
-    submitButton.disabled = true;
-    downloadButton.disabled = true;
-    
-    recordedChunks = [];
-    timerElement.textContent = "00:00";
-    updateStatus("Prêt à enregistrer", "info");
-    
-    if (video.srcObject) {
-        video.play();
-    } else {
-        initializeCamera();
-    }
-}
+        // Reset captured image and result image
+        this.capturedImages[type] = null;
+        
+        // Reset result images and text to placeholders
+        this.elements.plateResultImage.src = 'assets/placeholder.svg';
+        this.elements.logoResultImage.src = 'assets/placeholder.svg';
+        this.elements.plateNumberText.textContent = 'Non détecté';
+        this.elements.plateVisibilityText.textContent = 'N/A';
+        this.elements.logoVisibilityText.textContent = 'N/A';
 
-function downloadVideo() {
-    if (recordedChunks.length === 0) {
-        updateStatus("Aucune vidéo à télécharger", "error");
-        return;
-    }
-    
-    try {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `gozem-branding-${championIDInput.value}-${Date.now()}.webm`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error("Erreur lors du téléchargement:", error);
-        updateStatus("Erreur lors du téléchargement de la vidéo", "error");
-    }
-}
+        this.initCamera(type);
 
-async function submitVideo() {
-    if (!validateInputs()) {
-        updateStatus("Veuillez remplir tous les champs obligatoires", "error");
-        return;
+        // Validate form after reset
+        this.validateForm();
     }
 
-    if (recordedChunks.length === 0) {
-        updateStatus("Aucune vidéo à envoyer", "error");
-        return;
+    resetEntireProcess() {
+        this.resetCapture('plate');
+        this.resetCapture('logo');
+
+        // Reset form inputs
+        Object.values(this.elements.formInputs).forEach(input => input.value = '');
+
+        // Reset request ID and processing results
+        this.requestId = null;
+        this.processingResults = null;
+
+        // Clear summary
+        this.elements.summaryText.innerHTML = '';
+
+        // Validate form
+        this.validateForm();
     }
 
-    showProcessingPopup();
-    
-    try {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const formData = new FormData();
-        formData.append('file', blob, `gozem-branding-${championIDInput.value}.webm`);
+    async submitData() {
+        // Only submit if form is valid and both images are captured
+        if (!this.elements.submitButton.disabled) {
+            this.elements.processingPopup.classList.remove('hidden');
 
-        const response = await fetch(`${API_BASE_URL}/process_video/`, {
-            method: 'POST',
-            body: formData
-        });
+            try {
+                // Prepare form data to send both images
+                const formData = new FormData();
+                formData.append('plate_image', this.capturedImages.plate, 'plate.png');
+                formData.append('logo_image', this.capturedImages.logo, 'logo.png');
 
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
+                // Send images to API
+                const response = await fetch(`${this.apiBaseUrl}/detect`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                // Update UI with results
+                if (result.plate || result.logo) {
+                    // Store request ID and results
+                    this.requestId = result.request_id;
+                    this.processingResults = result;
+
+                    // Update result images using Google Cloud Storage URL
+                    this.elements.plateResultImage.src = this.convertGoogleStorageUrl(result.plate.plate_image_path);
+                    this.elements.logoResultImage.src = this.convertGoogleStorageUrl(result.logo.logo_image_path);
+
+                    // Update plate details
+                    this.elements.plateNumberText.textContent = result.plate.text || 'Non détecté';
+                    this.elements.plateVisibilityText.textContent = 
+                        result.plate.ocr_confidence ? 
+                        `Confiance OCR: ${(result.plate.score * 100).toFixed(2)}%` : 
+                        'N/A';
+                    
+                    // Update logo details
+                    this.elements.logoVisibilityText.textContent = 
+                        result.logo.visibility || 
+                        (result.logo.score ? `Score: ${(result.logo.score * 100).toFixed(2)}%` : 'N/A');
+
+                    // Prepare summary details with enhanced styling
+                    const summaryInfo = `
+                        <div class="result-summary-container">
+                            <div class="result-summary-section plate-details">
+                                <div class="summary-section-header">
+                                    <i class="fas fa-car"></i>
+                                    <h3>Détails de la Plaque</h3>
+                                </div>
+                                <div class="summary-section-content">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Numéro de plaque</span>
+                                        <span class="detail-value">${result.plate.text || 'Non détecté'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Précision</span>
+                                        <span class="detail-value">
+                                            ${result.plate.ocr_confidence ? 
+                                                `${(result.plate.score * 100).toFixed(2)}%` : 
+                                                'Non évaluée'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="result-summary-section logo-details">
+                                <div class="summary-section-header">
+                                    <i class="fas fa-image"></i>
+                                    <h3>Analyse du Logo</h3>
+                                </div>
+                                <div class="summary-section-content">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Visibilité</span>
+                                        <span class="detail-value">${result.logo.visibility || 'Non spécifiée'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Score de détection</span>
+                                        <span class="detail-value">
+                                            ${result.logo.score ? 
+                                                `${(result.logo.score * 100).toFixed(2)}%` : 
+                                                'Non évalué'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="result-summary-section request-details">
+                                <div class="summary-section-header">
+                                    <i class="fas fa-info-circle"></i>
+                                    <h3>Informations de la requête</h3>
+                                </div>
+                                <div class="summary-section-content">
+                                    <div class="detail-item">
+                                        <span class="detail-label">ID de requête</span>
+                                        <span class="detail-value">${result.request_id}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    this.elements.summaryText.innerHTML = summaryInfo;
+
+                    // Switch to Results tab
+                    document.querySelector('.tab-button[data-tab="tab2"]').click();
+                } else {
+                    alert('Aucune information détectée');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la soumission:', error);
+                alert('Impossible de soumettre les images. Vérifiez votre connexion.');
+            } finally {
+                this.elements.processingPopup.classList.add('hidden');
+            }
+        }
+    }
+
+    // Utility method to convert Google Storage URL to a displayable URL
+    convertGoogleStorageUrl(gsUrl) {
+        if (!gsUrl || !gsUrl.startsWith('gs://')) {
+            return 'assets/placeholder.svg';
         }
 
-        const data = await response.json();
-        console.log("Réponse API:", data); // Pour le débogage
+        const bucket = gsUrl.split('/')[2];
+        const path = gsUrl.split(bucket + '/')[1];
+        return `https://storage.googleapis.com/${bucket}/${path}`;
+    }
+
+    switchTab(button) {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
         
-        if (data.status === "success" && data.request_id) {
-            const processedData = {
-                status: "success",
-                requestId: data.request_id,
-                logoDetected: data.results.best_logo?.visibility === "OK",
-                plateDetected: Boolean(data.results.best_plate?.text),
-                plateText: data.results.best_plate?.text || '',
-                plateConfidence: data.results.best_plate?.score || 0,
-                logoScore: data.results.best_logo?.best_score || 0,
-                logoImageUrl: `${API_BASE_URL}/results/${data.request_id}/best_logo.jpg`,
-                plateImageUrl: `${API_BASE_URL}/results/${data.request_id}/best_license_plate.jpg`,
-                videoUrl: `${API_BASE_URL}/results/${data.request_id}/VID_04.mp4`
-            };
-
-            localStorage.setItem('resultData', JSON.stringify(processedData));
-            localStorage.setItem('userData', JSON.stringify({
-                championID: championIDInput.value,
-                lastName: lastNameInput.value
-            }));
-
-            displayResults();
-            showTab('tab2');
-            updateStatus("Vidéo traitée avec succès !", "success");
-        } else {
-            throw new Error(data.message || "Erreur de traitement");
-        }
-    } catch (error) {
-        console.error("Erreur d'envoi:", error);
-        updateStatus(`Erreur lors du traitement de la vidéo: ${error.message}`, "error");
-    } finally {
-        hideProcessingPopup();
+        button.classList.add('active');
+        document.getElementById(button.dataset.tab).classList.add('active');
     }
 }
 
-function displayResults() {
-    const resultData = JSON.parse(localStorage.getItem('resultData'));
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    
-    if (resultData && userData) {
-        const logoImage = document.getElementById('logoImage');
-        const plateImage = document.getElementById('plateImage');
-        
-        // Ajouter des gestionnaires d'erreur pour les images
-        logoImage.onerror = function() {
-            console.error('Erreur de chargement de l\'image du logo:', this.src);
-            this.src = 'assets/no-image.svg';
-        };
-        
-        plateImage.onerror = function() {
-            console.error('Erreur de chargement de l\'image de la plaque:', this.src);
-            this.src = 'assets/no-image.svg';
-        };
-        
-        logoImage.src = resultData.logoImageUrl || 'assets/no-image.svg';
-        plateImage.src = resultData.plateImageUrl || 'assets/no-image.svg';
-        
-        document.getElementById('summaryText').innerHTML = `
-            <div class="summary-item">
-                <span class="label">Request ID:</span>
-                <span class="value">${resultData.requestId}</span>
-            </div>
-            <div class="summary-item">
-                <span class="label">Champion ID:</span>
-                <span class="value">${userData.championID}</span>
-            </div>
-            <div class="summary-item">
-                <span class="label">Nom:</span>
-                <span class="value">${userData.lastName}</span>
-            </div>
-            <div class="summary-item">
-                <span class="label">Logo détecté:</span>
-                <span class="value ${resultData.logoDetected ? 'success' : 'failure'}">
-                    ${resultData.logoDetected ? 'Oui' : 'Non'}
-                </span>
-            </div>
-            <div class="summary-item">
-                <span class="label">Score du logo:</span>
-                <span class="value">${(resultData.logoScore * 100).toFixed(1)}%</span>
-            </div>
-            <div class="summary-item">
-                <span class="label">Plaque détectée:</span>
-                <span class="value ${resultData.plateDetected ? 'success' : 'failure'}">
-                    ${resultData.plateDetected ? 'Oui' : 'Non'}
-                </span>
-            </div>
-            ${resultData.plateDetected ? `
-                <div class="summary-item">
-                    <span class="label">Texte de la plaque:</span>
-                    <span class="value">${resultData.plateText}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="label">Confiance plaque:</span>
-                    <span class="value">${(resultData.plateConfidence * 100).toFixed(1)}%</span>
-                </div>
-            ` : ''}
-            <div class="summary-item">
-                <span class="label">Vidéo traitée:</span>
-                <a href="${resultData.videoUrl}" target="_blank" class="video-link">Voir la vidéo traitée</a>
-            </div>
-        `;
-    }
-}
-
-function validateInputs() {
-    return championIDInput.value.trim() && lastNameInput.value.trim();
-}
-
-function startTimer() {
-    let seconds = 0;
-    timerInterval = setInterval(() => {
-        seconds++;
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        timerElement.textContent = `${padTime(minutes)}:${padTime(secs)}`;
-    }, 1000);
-}
-
-function padTime(time) {
-    return time < 10 ? `0${time}` : time;
-}
-
-function resetUI() {
-    startButton.disabled = false;
-    stopButton.disabled = true;
-    retakeButton.disabled = true;
-    submitButton.disabled = true;
-    downloadButton.disabled = true;
-}
-
-function showTab(tabId) {
-    const tabs = document.querySelectorAll('.tab-content');
-    const buttons = document.querySelectorAll('.tab-button');
-    
-    tabs.forEach(tab => tab.classList.remove('active'));
-    buttons.forEach(btn => btn.classList.remove('active'));
-    
-    document.getElementById(tabId).classList.add('active');
-    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-    
-    if (tabId === 'tab2') {
-        displayResults();
-    }
-}
-
-function showProcessingPopup() {
-    processingPopup.classList.remove('hidden');
-}
-
-function hideProcessingPopup() {
-    processingPopup.classList.add('hidden');
-}
-
-// Event Listeners
-startButton.addEventListener('click', startRecording);
-stopButton.addEventListener('click', stopRecording);
-retakeButton.addEventListener('click', retakeVideo);
-downloadButton.addEventListener('click', downloadVideo);
-submitButton.addEventListener('click', submitVideo);
-
-// Tab navigation
-document.querySelectorAll('.tab-button').forEach(button => {
-    button.addEventListener('click', () => {
-        showTab(button.dataset.tab);
-    });
+// Initialize the app when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new BrandingVerification();
 });
-
-// Initialize the application
-initializeCamera();
