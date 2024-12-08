@@ -207,6 +207,11 @@ class BrandingVerification {
                 formData.append('plate_image', this.capturedImages.plate, 'plate.png');
                 formData.append('logo_image', this.capturedImages.logo, 'logo.png');
 
+                // Récupérer les informations de l'utilisateur
+                const firstName = this.elements.formInputs.firstName.value;
+                const lastName = this.elements.formInputs.lastName.value;
+                const phoneNumber = this.elements.formInputs.phoneNumber.value;
+
                 // Send images to API
                 const response = await fetch(`${this.apiBaseUrl}/detect`, {
                     method: 'POST',
@@ -237,9 +242,30 @@ class BrandingVerification {
                         result.logo.visibility || 
                         (result.logo.score ? `Score: ${(result.logo.score * 100).toFixed(2)}%` : 'N/A');
 
-                    // Prepare summary details with enhanced styling
+                    // Prepare summary details with enhanced styling and user information
                     const summaryInfo = `
                         <div class="result-summary-container">
+                            <div class="result-summary-section user-details">
+                                <div class="summary-section-header">
+                                    <i class="fas fa-user"></i>
+                                    <h3>Informations du Client</h3>
+                                </div>
+                                <div class="summary-section-content">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Nom</span>
+                                        <span class="detail-value">${lastName}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Prénom</span>
+                                        <span class="detail-value">${firstName}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Numéro de téléphone</span>
+                                        <span class="detail-value">${phoneNumber}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="result-summary-section plate-details">
                                 <div class="summary-section-header">
                                     <i class="fas fa-car"></i>
