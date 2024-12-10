@@ -237,9 +237,30 @@ class BrandingVerification {
                         result.logo.visibility || 
                         (result.logo.score ? `Score: ${(result.logo.score * 100).toFixed(2)}%` : 'N/A');
 
-                    // Prepare summary details with enhanced styling
+                    // Prepare summary details with user information and enhanced styling
                     const summaryInfo = `
                         <div class="result-summary-container">
+                            <div class="result-summary-section user-details">
+                                <div class="summary-section-header">
+                                    <i class="fas fa-user"></i>
+                                    <h3>Informations Personnelles</h3>
+                                </div>
+                                <div class="summary-section-content">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Prénom</span>
+                                        <span class="detail-value">${this.elements.formInputs.firstName.value}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Nom de famille</span>
+                                        <span class="detail-value">${this.elements.formInputs.lastName.value}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Numéro de téléphone</span>
+                                        <span class="detail-value">${this.elements.formInputs.phoneNumber.value}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="result-summary-section plate-details">
                                 <div class="summary-section-header">
                                     <i class="fas fa-car"></i>
