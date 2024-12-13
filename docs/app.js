@@ -1,3 +1,5 @@
+
+
 class BrandingVerification {
     constructor() {
         this.initializeElements();
@@ -359,3 +361,5 @@ class BrandingVerification {
 document.addEventListener('DOMContentLoaded', () => {
     new BrandingVerification();
 });
+
+
