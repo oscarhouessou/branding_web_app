@@ -1,5 +1,8 @@
 /* Base styles and variables */
 :root {
+    /* Add some additional responsive variables */
+    --mobile-padding: 15px;
+    --mobile-gap: 10px;
     --primary-color: #00b140; /* Vert Gozem */
     --secondary-color: #607D8B;
     --success-color: #4CAF50;
@@ -23,6 +26,7 @@
 }
 
 body {
+    font-size: 16px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--background-color);
     color: var(--text-primary);
@@ -30,43 +34,56 @@ body {
 }
 
 .container {
+    width: 100%;
+    padding: var(--mobile-padding);
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+   
 }
 
 /* Header styles */
 .app-header {
     text-align: center;
     margin-bottom: 2rem;
-    padding: 2rem 0;
+    padding: 1rem var(--mobile-padding);
 }
 
 .app-header h1 {
     color: var(--primary-color);
-    font-size: 2.5rem;
+    /* font-size: 2.5rem; */
     margin-bottom: 0.5rem;
     display: flex;
-    align-items: center;
+    /* align-items: center; */
     justify-content: center;
     gap: 1rem;
+
+    font-size: 1.8rem;
+    flex-direction: column;
+    align-items: center;
 }
 
 .app-description {
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    /* font-size: 1.1rem; */
+
+    font-size: 1rem;
+    text-align: center;
 }
 
 /* Navigation tabs */
 .tabs {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    /* gap: 1rem; */
     margin-bottom: 2rem;
     background: var(--card-background);
-    padding: 1rem;
+    /* padding: 1rem; */
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
+
+    flex-direction: column;
+    gap: var(--mobile-gap);
+    padding: var(--mobile-padding);
 }
 
 .tab-button {
@@ -81,6 +98,11 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+
+
+    width: 100%;
+    justify-content: center;
+    /* padding: 1rem; */
 }
 
 .tab-button:hover {
@@ -95,10 +117,11 @@ body {
 /* Form styles */
 .form-panel {
     background: var(--card-background);
-    padding: 2rem;
+    /* padding: 2rem; */
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     margin-bottom: 2rem;
+    padding: 1rem var(--mobile-padding);
 }
 
 .input-group {
@@ -151,7 +174,10 @@ body {
     justify-content: center;
     align-items: center;
     margin-bottom: 2rem;
-    gap: 1rem;
+    /* gap: 1rem; */
+
+    flex-direction: column;
+    gap: var(--mobile-gap);
 }
 
 .capture-section {
@@ -161,14 +187,17 @@ body {
     padding: 1rem;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
+
+    
 }
 
 .capture-section .video-container {
     position: relative;
     width: 100%;
     height: 0;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    /* padding-bottom: 56.25%; 16:9 aspect ratio */
     margin-bottom: 1rem;
+    padding-bottom: 70%; /* Slightly taller for mobile */
 }
 
 .capture-section .video-container video {
@@ -196,7 +225,9 @@ body {
 .capture-section .controls {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    /* gap: 1rem; */
+    flex-direction: column;
+    gap: var(--mobile-gap);
 }
 
 .capture-section.hidden {
@@ -209,12 +240,16 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-top: 20px;
-    gap: 1rem;
+    /* gap: 1rem; */
+
+    flex-direction: column;
+    gap: var(--mobile-gap);
 }
 
 .submission-controls .btn {
     flex-grow: 1;
     justify-content: center;
+    width: 100%;
 }
 
 /* Button styles */
@@ -277,10 +312,13 @@ body {
     border-radius: var(--border-radius);
     display: flex;
     justify-content: center;
-    align-items: center;
     background-size: cover;
     background-position: center;
     position: relative;
+
+    flex-direction: column;
+    align-items: center;
+    gap: var(--mobile-gap);
 }
 
 .capture-preview.captured {
@@ -300,9 +338,11 @@ body {
 /* Results section styles */
 .results-section {
     background: var(--card-background);
-    padding: 2rem;
+    /* padding: 2rem; */
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
+
+    padding: var(--mobile-padding);
 }
 
 .results-container {
@@ -312,8 +352,11 @@ body {
 .results-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
+    /* gap: 2rem; */
     margin-bottom: 2rem;
+
+    /* grid-template-columns: 1fr; Stack on mobile */
+    gap: var(--mobile-gap);
 }
 
 .result-card {
@@ -518,6 +561,15 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+
+    :root {
+        --mobile-padding: 10px;
+        --mobile-gap: 8px;
+    }
+
+    .capture-preview {
+        height: 150px;
+    }
     .container {
         padding: 10px;
     }
