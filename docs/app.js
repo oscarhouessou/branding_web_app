@@ -85,14 +85,18 @@ class BrandingVerification {
     }
 
     async initCamera(type) {
-        const constraints = type === 'plate' 
-            ? { video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } }
-            : { video: true };
-
+        const constraints = { 
+            video: { 
+                facingMode: 'environment',  // Toujours utiliser la caméra arrière
+                width: { ideal: 1920 }, 
+                height: { ideal: 1080 } 
+            } 
+        };
+    
         try {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             this.streams[type] = stream;
-
+    
             if (type === 'plate') {
                 this.elements.plateVideo.srcObject = stream;
                 this.elements.plateCapture.classList.remove('hidden');
