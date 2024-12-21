@@ -28,6 +28,10 @@ class BrandingVerification {
             logoVisibilityText: document.getElementById('logoVisibilityText'),
             summaryText: document.getElementById('summaryText'),
             processingPopup: document.getElementById('processingPopup'),
+            //  Add new popup elements
+            successPopup: document.createElement('div'),
+            errorPopup: document.createElement('div'),
+
             instructionText: document.getElementById('instructionText'),
             plateCapture: document.getElementById('plateCapture'),
             logoCapture: document.getElementById('logoCapture'),
@@ -41,6 +45,9 @@ class BrandingVerification {
                 phoneNumber: document.getElementById('phoneNumber')
             }
         };
+
+        // Initialize popups
+        this.initializePopups();
 
         this.streams = {
             plate: null,
@@ -71,6 +78,52 @@ class BrandingVerification {
         });
 
     }
+
+    initializePopups() {
+        // Create success popup
+        this.elements.successPopup.className = 'popup-overlay hidden';
+        this.elements.successPopup.innerHTML = `
+            <div class="popup-content">
+                <div class="popup-header">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <h3>Traitement terminé</h3>
+                </div>
+                <div class="popup-body">
+                    <p>Les images ont été traitées avec succès.</p>
+                </div>
+                <div class="popup-footer">
+                    <button class="btn btn-primary" onclick="this.closest('.popup-overlay').classList.add('hidden')">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Create error popup
+        this.elements.errorPopup.className = 'popup-overlay hidden';
+        this.elements.errorPopup.innerHTML = `
+            <div class="popup-content">
+                <div class="popup-header">
+                    <i class="fas fa-times-circle text-danger"></i>
+                    <h3>Erreur</h3>
+                </div>
+                <div class="popup-body">
+                    <p>Impossible de soumettre les images. Vérifiez votre connexion.</p>
+                </div>
+                <div class="popup-footer">
+                    <button class="btn btn-primary" onclick="this.closest('.popup-overlay').classList.add('hidden')">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add popups to document body
+        document.body.appendChild(this.elements.successPopup);
+        document.body.appendChild(this.elements.errorPopup);
+    }
+
+
 
     bindEvents() {
         // Ensure submit button is enabled only when both inputs are captured
@@ -442,13 +495,18 @@ class BrandingVerification {
                     `;
                     this.elements.summaryText.innerHTML = summaryInfo;
 
+                    // document.querySelector('.tab-button[data-tab="tab2"]').click();
+
+                    // Show success popup after processing is complete
+                    this.elements.successPopup.classList.remove('hidden');
                     document.querySelector('.tab-button[data-tab="tab2"]').click();
+
                 } else {
-                    alert('Aucune information détectée');
+                    this.elements.errorPopup.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('Erreur lors de la soumission:', error);
-                alert('Impossible de soumettre les images. Vérifiez votre connexion.');
+                this.elements.errorPopup.classList.remove('hidden');
             } finally {
                 this.elements.processingPopup.classList.add('hidden');
             }
