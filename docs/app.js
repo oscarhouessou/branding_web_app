@@ -1,11 +1,13 @@
 
 
 class BrandingVerification {
+    
+
     constructor() {
         this.initializeElements();
         this.bindEvents();
         this.initCamera('plate');
-        this.apiBaseUrl = 'https://branding-fastapi-194419091475.us-central1.run.app';
+        this.apiBaseUrl = 'https://my-fastapi-app-194419091475.us-central1.run.app';
     }
 
     initializeElements() {
@@ -203,17 +205,14 @@ class BrandingVerification {
     }
 
     async submitData() {
-        // Only submit if form is valid and both images are captured
         if (!this.elements.submitButton.disabled) {
             this.elements.processingPopup.classList.remove('hidden');
 
             try {
-                // Prepare form data to send both images
                 const formData = new FormData();
                 formData.append('plate_image', this.capturedImages.plate, 'plate.png');
                 formData.append('logo_image', this.capturedImages.logo, 'logo.png');
 
-                // Send images to API
                 const response = await fetch(`${this.apiBaseUrl}/detect`, {
                     method: 'POST',
                     body: formData
@@ -221,29 +220,27 @@ class BrandingVerification {
 
                 const result = await response.json();
 
-                // Update UI with results
                 if (result.plate || result.logo) {
-                    // Store request ID and results
                     this.requestId = result.request_id;
                     this.processingResults = result;
 
-                    // Update result images using Google Cloud Storage URL
+                    // Update result images using original images from JSON
                     this.elements.plateResultImage.src = this.convertGoogleStorageUrl(result.plate.plate_image_path);
                     this.elements.logoResultImage.src = this.convertGoogleStorageUrl(result.logo.logo_image_path);
 
-                    // Update plate details
-                    this.elements.plateNumberText.textContent = result.plate.text || 'Non détecté';
+                    // Update plate details with validation info
+                    this.elements.plateNumberText.textContent = `${result.plate.text || 'Non détecté'}${result.plate.is_valid ? ' ✓' : ' ✗'}`;
                     this.elements.plateVisibilityText.textContent = 
-                        result.plate.ocr_confidence ? 
-                        `Confiance OCR: ${(result.plate.score * 100).toFixed(2)}%` : 
-                        'N/A';
+                        `Confiance OCR: ${(result.plate.ocr_confidence * 100).toFixed(2)}%\n` +
+                        `Score: ${(result.plate.score * 100).toFixed(2)}%\n` +
+                        `${result.plate.validation_message}`;
                     
                     // Update logo details
                     this.elements.logoVisibilityText.textContent = 
-                        result.logo.visibility || 
-                        (result.logo.score ? `Score: ${(result.logo.score * 100).toFixed(2)}%` : 'N/A');
+                        `Visibilité: ${result.logo.visibility}\n` +
+                        `Score: ${(result.logo.score * 100).toFixed(2)}%`;
 
-                    // Prepare summary details with user information and enhanced styling
+                    // Prepare enhanced summary with all JSON data
                     const summaryInfo = `
                         <div class="result-summary-container">
                             <div class="result-summary-section user-details">
@@ -275,16 +272,24 @@ class BrandingVerification {
                                 <div class="summary-section-content">
                                     <div class="detail-item">
                                         <span class="detail-label">Numéro de plaque</span>
-                                        <span class="detail-value">${result.plate.text || 'Non détecté'}</span>
+                                        <span class="detail-value">
+                                            ${result.plate.text || 'Non détecté'}
+                                            ${result.plate.is_valid ? 
+                                                '<i class="fas fa-check-circle text-success"></i>' : 
+                                                '<i class="fas fa-times-circle text-danger"></i>'}
+                                        </span>
                                     </div>
                                     <div class="detail-item">
-                                        <span class="detail-label">Précision</span>
-                                        <span class="detail-value">
-                                            ${result.plate.ocr_confidence ? 
-                                                `${(result.plate.score * 100).toFixed(2)}%` : 
-                                                'Non évaluée'
-                                            }
-                                        </span>
+                                        <span class="detail-label">Validation</span>
+                                        <span class="detail-value">${result.plate.validation_message}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Confiance OCR</span>
+                                        <span class="detail-value">${(result.plate.ocr_confidence * 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Score de détection</span>
+                                        <span class="detail-value">${(result.plate.score * 100).toFixed(2)}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -297,16 +302,11 @@ class BrandingVerification {
                                 <div class="summary-section-content">
                                     <div class="detail-item">
                                         <span class="detail-label">Visibilité</span>
-                                        <span class="detail-value">${result.logo.visibility || 'Non spécifiée'}</span>
+                                        <span class="detail-value">${result.logo.visibility}</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">Score de détection</span>
-                                        <span class="detail-value">
-                                            ${result.logo.score ? 
-                                                `${(result.logo.score * 100).toFixed(2)}%` : 
-                                                'Non évalué'
-                                            }
-                                        </span>
+                                        <span class="detail-value">${(result.logo.score * 100).toFixed(2)}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -327,7 +327,6 @@ class BrandingVerification {
                     `;
                     this.elements.summaryText.innerHTML = summaryInfo;
 
-                    // Switch to Results tab
                     document.querySelector('.tab-button[data-tab="tab2"]').click();
                 } else {
                     alert('Aucune information détectée');
@@ -365,5 +364,15 @@ class BrandingVerification {
 document.addEventListener('DOMContentLoaded', () => {
     new BrandingVerification();
 });
+
+
+
+
+
+
+
+
+
+
 
 
