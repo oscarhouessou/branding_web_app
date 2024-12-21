@@ -54,6 +54,22 @@ class BrandingVerification {
 
         this.requestId = null;
         this.processingResults = null;
+
+        // Initialiser l'affichage du résumé avec des valeurs par défaut
+        this.updateSummary({
+            firstName: '',
+            lastName: '',
+            phoneNumber: '',
+            plate: {
+                text: 'En attente',
+                is_valid: false,
+                validation_message: 'En attente de détection'
+            },
+            logo: {
+                visibility: 'En attente'
+            }
+        });
+
     }
 
     bindEvents() {
@@ -77,8 +93,80 @@ class BrandingVerification {
         });
     }
 
+    updateSummary(data) {
+        const summaryInfo = `
+            <div class="result-summary-container">
+                <div class="result-summary-section user-details">
+                    <div class="summary-section-header">
+                        <i class="fas fa-user"></i>
+                        <h3>Informations Personnelles</h3>
+                    </div>
+                    <div class="summary-section-content">
+                        <div class="detail-item">
+                            <span class="detail-label">Prénom</span>
+                            <span class="detail-value">${data.firstName || 'Non renseigné'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Nom de famille</span>
+                            <span class="detail-value">${data.lastName || 'Non renseigné'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Numéro de téléphone</span>
+                            <span class="detail-value">${data.phoneNumber || 'Non renseigné'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-summary-section plate-details">
+                    <div class="summary-section-header">
+                        <i class="fas fa-car"></i>
+                        <h3>Détails de la Plaque</h3>
+                    </div>
+                    <div class="summary-section-content">
+                        <div class="detail-item">
+                            <span class="detail-label">Numéro de plaque</span>
+                            <span class="detail-value">
+                                ${data.plate?.text || 'En attente'}
+                                ${data.plate?.is_valid ? 
+                                    '<i class="fas fa-check-circle text-success"></i>' : 
+                                    '<i class="fas fa-clock text-warning"></i>'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-summary-section logo-details">
+                    <div class="summary-section-header">
+                        <i class="fas fa-image"></i>
+                        <h3>Analyse du Logo</h3>
+                    </div>
+                    <div class="summary-section-content">
+                        <div class="detail-item">
+                            <span class="detail-label">Visibilité</span>
+                            <span class="detail-value">${data.logo?.visibility || 'En attente'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        this.elements.summaryText.innerHTML = summaryInfo;
+    }
+
     validateForm() {
-        const allFieldsFilled = Object.values(this.elements.formInputs).every(input => input.value.trim() !== '');
+        const formData = {
+            firstName: this.elements.formInputs.firstName.value,
+            lastName: this.elements.formInputs.lastName.value,
+            phoneNumber: this.elements.formInputs.phoneNumber.value
+        };
+        
+        // Mettre à jour le résumé avec les nouvelles valeurs du formulaire
+        this.updateSummary({
+            ...formData,
+            plate: this.processingResults?.plate || { text: 'En attente', is_valid: false },
+            logo: this.processingResults?.logo || { visibility: 'En attente' }
+        });
+
+        const allFieldsFilled = Object.values(formData).every(value => value.trim() !== '');
         const plateAndLogoCaptured = 
             this.elements.platePreview.classList.contains('captured') && 
             this.elements.logoPreview.classList.contains('captured');
@@ -86,6 +174,11 @@ class BrandingVerification {
         this.elements.submitButton.disabled = !(allFieldsFilled && plateAndLogoCaptured);
     }
 
+    /**
+     * Initializes the camera for plate or logo capture.
+     * @param {string} type - Either 'plate' or 'logo'.
+     * @returns {Promise<void>} - Resolves when camera is initialized, rejects if camera access is denied.
+     */
     async initCamera(type) {
         const constraints = { 
             video: { 
@@ -223,7 +316,17 @@ class BrandingVerification {
                 if (result.plate || result.logo) {
                     this.requestId = result.request_id;
                     this.processingResults = result;
+                    
+                    // Mettre à jour le résumé avec les résultats de la détection
+                    this.updateSummary({
+                        firstName: this.elements.formInputs.firstName.value,
+                        lastName: this.elements.formInputs.lastName.value,
+                        phoneNumber: this.elements.formInputs.phoneNumber.value,
+                        plate: result.plate,
+                        logo: result.logo
+                    });
 
+                    
                     // Update result images using original images from JSON
                     this.elements.plateResultImage.src = this.convertGoogleStorageUrl(result.plate.plate_image_path);
                     this.elements.logoResultImage.src = this.convertGoogleStorageUrl(result.logo.logo_image_path);
