@@ -378,7 +378,7 @@ class BrandingVerification {
 
                 const result = await response.json();
 
-                if (result.plate || result.logo) {
+                if (result.plate && result.logo) {
                     this.requestId = result.request_id;
                     this.processingResults = result;
                     
