@@ -630,3 +630,145 @@ body {
     }
 
 }
+
+
+/* Styles pour le conteneur principal du résumé */
+.result-summary-container {
+    display: grid;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+/* Styles pour chaque section du résumé */
+.result-summary-section {
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    transition: transform var(--transition-speed);
+}
+
+.result-summary-section:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* En-tête de section */
+.summary-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.summary-section-header i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.summary-section-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+}
+
+/* Contenu de la section */
+.summary-section-content {
+    display: grid;
+    gap: 0.75rem;
+}
+
+/* Style pour chaque élément de détail */
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--card-background);
+    border-radius: var(--border-radius);
+    border-left: 3px solid var(--primary-color);
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.detail-value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Styles spécifiques pour les icônes de statut */
+.text-success {
+    color: var(--success-color);
+}
+
+.text-danger {
+    color: var(--danger-color);
+}
+
+.text-warning {
+    color: var(--warning-color);
+}
+
+/* Style pour l'ID de requête */
+.request-details .detail-value {
+    font-family: monospace;
+    background: rgba(0, 177, 64, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Responsive design */
+@media (min-width: 768px) {
+    .result-summary-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .request-details {
+        grid-column: span 2;
+    }
+}
+
+@media (min-width: 1024px) {
+    .result-summary-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .request-details {
+        grid-column: span 3;
+    }
+}
+
+/* Animation pour les changements d'état */
+.detail-value {
+    transition: all var(--transition-speed);
+}
+
+/* Styles pour les valeurs numériques */
+.detail-value[data-type="percentage"]::after {
+    content: '%';
+    margin-left: 2px;
+    opacity: 0.7;
+}
+
+/* Styles pour les scores */
+.detail-item[data-score="high"] {
+    border-left-color: var(--success-color);
+}
+
+.detail-item[data-score="medium"] {
+    border-left-color: var(--warning-color);
+}
+
+.detail-item[data-score="low"] {
+    border-left-color: var(--danger-color);
+}
