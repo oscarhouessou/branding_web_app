@@ -129,9 +129,21 @@ class BrandingVerification {
                                 ${data.plate?.text || 'En attente'}
                                 ${data.plate?.is_valid ? 
                                     '<i class="fas fa-check-circle text-success"></i>' : 
-                                    '<i class="fas fa-clock text-warning"></i>'}
+                                    '<i class="fas fa-times-circle text-danger"></i>'}
                             </span>
                         </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Statut de validation</span>
+                            <span class="detail-value ${data.plate?.is_valid ? 'text-success' : 'text-danger'}">
+                                ${data.plate?.is_valid ? 'Valide' : 'Non valide'}
+                            </span>
+                        </div>
+                        ${data.plate?.validation_message ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Message de validation</span>
+                            <span class="detail-value">${data.plate.validation_message}</span>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
                 
@@ -326,7 +338,7 @@ class BrandingVerification {
                         logo: result.logo
                     });
 
-                    
+
                     // Update result images using original images from JSON
                     this.elements.plateResultImage.src = this.convertGoogleStorageUrl(result.plate.plate_image_path);
                     this.elements.logoResultImage.src = this.convertGoogleStorageUrl(result.logo.logo_image_path);
