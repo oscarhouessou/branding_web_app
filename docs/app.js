@@ -381,6 +381,33 @@ class BrandingVerification {
                 if (result.plate && result.logo) {
                     this.requestId = result.request_id;
                     this.processingResults = result;
+
+                    // Prepare CSV data
+                    const csvData = {
+                        date: new Date().toISOString(),
+                        request_id: result.request_id,
+                        first_name: this.elements.formInputs.firstName.value,
+                        last_name: this.elements.formInputs.lastName.value,
+                        phone_number: this.elements.formInputs.phoneNumber.value,
+                        plate_number: result.plate.text || '',
+                        plate_is_valid: result.plate.is_valid,
+                        plate_validation_message: result.plate.validation_message || '',
+                        plate_ocr_confidence: result.plate.ocr_confidence,
+                        plate_detection_score: result.plate.score,
+                        logo_visibility: result.logo.visibility,
+                        logo_detection_score: result.logo.score,
+                        plate_image_path: result.original_images.plate_image_path,
+                        logo_image_path: result.original_images.logo_image_path
+                    };
+
+                    // Send data to append-to-csv endpoint
+                    await fetch(`${this.apiBaseUrl}/append-to-csv`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(csvData)
+                    });
                     
                     // Mettre à jour le résumé avec les résultats de la détection
                     this.updateSummary({
